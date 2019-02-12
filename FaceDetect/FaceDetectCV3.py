@@ -18,7 +18,7 @@ def cascade_detect(cascade, image):
 def detections_draw(image, detections):
     "draw squares around detected objects"
     for (x, y, w, h) in detections:
-        print "({0}, {1}, {2}, {3})".format(x, y, w, h)
+        print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 def main(argv=None):
@@ -37,22 +37,22 @@ def main(argv=None):
         cascade_path = sys.argv[3]
     else:
         cascade_path = "haarcascade_frontalface_default.xml"
-    print "NOTE: Arguments set"
+    print ("NOTE: Arguments set")
 
     cascade = cv2.CascadeClassifier(cascade_path)
     image = cv2.imread(image_path)
 
     if image is None:
-        print "ERROR: Image did not load."
+        print ("ERROR: Image did not load.")
         return 2
-    print "NOTE: Image loaded"
+    print ("NOTE: Image loaded")
 
     detections = cascade_detect(cascade, image)
-    print "NOTE: Cascade detect passed"
+    print ("NOTE: Cascade detect passed")
     detections_draw(image, detections)
-    print "NOTE: Detections Draw passed"
+    print ("NOTE: Detections Draw passed")
 
-    print "Found {0} objects!".format(len(detections))
+    print ("Found {0} objects!".format(len(detections)))
     if result_path is None:
         cv2.imshow("Objects found", image)
         cv2.waitKey(0)

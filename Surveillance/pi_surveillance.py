@@ -101,6 +101,9 @@ gray = cv2.GaussianBlur(gray, (21, 21), 0)
 print("[INFO] starting background model...")
 avg = gray.copy().astype("float")
 rawCapture.truncate(0)
+frames=0
+fps=16
+sample_time=0
 
 # capture frames from the camera
 for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -123,7 +126,7 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
     #draw squares around detected faces"
     for (x, y, w, h) in faces:
         #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
         text = "Occupied"
 
     # draw sqares around contours
@@ -142,9 +145,24 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
     # draw the text and timestamp on the frame
     ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
     cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
-        cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
-    cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX,
-        0.35, (0, 0, 255), 1)
+        cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 0, 0), 2)
+    cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_COMPLEX,
+        0.35, (255, 0, 0), 1)
+
+
+    # calculate and draw fps
+    if(frames==0):
+        frames=frames+1
+        sample_time = time.time()*1000.0
+    else:
+        frames=frames+1
+        new_time = time.time()*1000.0
+        if( new_time - sample_time > 5000):
+            fps=frames/5
+            frames=0
+    cv2.putText(frame, "[{}]".format(fps), (450, 20),
+        cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 0, 0), 2)
+            
 
 
     # check to see if the room is occupied

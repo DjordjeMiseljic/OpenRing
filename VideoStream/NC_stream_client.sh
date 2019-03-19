@@ -1,9 +1,9 @@
 #/bin/bash
 
-if [-p fifo264]
+if [-p fifo]
 then
-	rm fifo264
+	rm fifo
 fi
 
-mkfifo fifo264
-	nc -l -v -p 9000 > fifo264
+mkfifo fifo
+	nc -l -v -p 9000 > fifo

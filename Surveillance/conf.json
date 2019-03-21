@@ -1,6 +1,6 @@
 {
 	"show_video": true,
-	"use_dropbox": true,
+	"use_dropbox": false,
 	"dropbox_access_token": "6dGbZTzREuAAAAAAAAAAPSQcX4tC4XW4BiojXXCb9ETgy4fAWL_8dAlCvXkzZxhg",
 	"dropbox_base_path": "OpenRing",
 	"min_upload_seconds": 3.0,

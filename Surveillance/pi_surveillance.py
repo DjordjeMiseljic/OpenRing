@@ -102,7 +102,7 @@ print("[INFO] starting background model...")
 avg = gray.copy().astype("float")
 rawCapture.truncate(0)
 frames=0
-fps=16
+fps=0
 sample_time=0
 
 # capture frames from the camera
@@ -150,19 +150,19 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
         0.35, (255, 0, 0), 1)
 
 
-    # calculate and draw fps
-    if(frames==0):
-        frames=frames+1
-        sample_time = time.time()*1000.0
-    else:
-        frames=frames+1
-        new_time = time.time()*1000.0
-        if( new_time - sample_time > 5000):
-            fps=frames/5
-            frames=0
-    cv2.putText(frame, "[{}]".format(fps), (450, 20),
-        cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 0, 0), 2)
-            
+    ## calculate and draw fps
+    #if(frames==0):
+        #frames=frames+1
+        #sample_time = time.time()*1000.0
+    #else:
+        #frames=frames+1
+        #new_time = time.time()*1000.0
+        #if( new_time - sample_time > 5000):
+            #fps=frames/5
+            #frames=0
+    #cv2.putText(frame, "[{}]".format(fps), (450, 20),
+    #cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 0, 0), 2)
+
 
 
     # check to see if the room is occupied

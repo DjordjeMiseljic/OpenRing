@@ -2,17 +2,18 @@ import time
 import threading
 try:
     from greenlet import getcurrent as get_ident
+    print("<get identificator> imported from greenlet")
 except ImportError:
     try:
         from thread import get_ident
+        print("<get identificator> imported from thread")
     except ImportError:
         from _thread import get_ident
+        print("<get identificator> imported from _thread")
 
 
 class CameraEvent(object):
-    """An Event-like class that signals all active clients when a new frame is
-    available.
-    """
+    """An Event-like class that signals all active clients when a new frame is available.  """
     def __init__(self):
         self.events = {}
 
@@ -70,6 +71,7 @@ class BaseCamera(object):
             while self.get_frame() is None:
                 time.sleep(0)
 
+    # MNOTE: called by client thread when client first connects via flask
     def get_frame(self):
         """Return the current camera frame."""
         BaseCamera.last_access = time.time()

@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    """Video streaming home page."""
+    """Seurveillance camera monitoring"""
     return render_template('index.html')
 
 
@@ -37,4 +37,4 @@ def video_feed():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', threaded=True)
+    app.run(host='192.168.0.16', threaded=True)

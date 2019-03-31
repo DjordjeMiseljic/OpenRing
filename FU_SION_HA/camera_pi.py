@@ -7,8 +7,9 @@ from base_camera import BaseCamera
 class Camera(BaseCamera):
     @staticmethod
     def frames_jpeg():
-        time.sleep(5)
+        time.sleep(2)
         with picamera.PiCamera() as camera:
+            print("Starting stream in 2 seconds")
             # let camera warm up
             time.sleep(2)
 

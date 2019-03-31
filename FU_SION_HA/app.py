@@ -12,7 +12,6 @@ app = Flask(__name__)
 # and yeild it to the client in jpeg data form
 def gen(camera):
     """Video streaming generator function."""
-
     while True:
         frame = camera.get_frame()
         yield (b'--frame\r\n'

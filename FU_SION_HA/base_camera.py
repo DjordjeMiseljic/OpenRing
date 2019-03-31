@@ -56,7 +56,7 @@ class CameraEvent(object):
                 # did not process a previous frame
                 # if the event stays set for more than 5 seconds, then assume
                 # the client is gone and remove it
-                if now - event[1] > 5:
+                if now - event[1] > 10:
                     remove = ident
         if remove:
             del self.events[remove]
@@ -144,7 +144,6 @@ class BaseCamera(object):
     def stream_thread(cls):
         """Camera background stream thread."""
         print('Starting stream thread.')
-        time.sleep(2)
         frames_iterator = cls.frames_jpeg()
         for frame in frames_iterator:
             BaseCamera.frame = frame
@@ -153,7 +152,7 @@ class BaseCamera(object):
 
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
-            if time.time() - BaseCamera.last_access > 5:
+            if time.time() - BaseCamera.last_access > 20:
                 frames_iterator.close()
                 BaseCamera.event.destroy()
                 print('Stopping camera thread due to inactivity.')
@@ -188,134 +187,133 @@ class BaseCamera(object):
             print("[SUCCESS] dropbox account linked")
             
 
-        # initialize the camera and grab a reference to the raw camera capture
-        camera = PiCamera()
-        camera.resolution = tuple(conf["resolution"])
-        camera.framerate = conf["fps"]
-        rawCapture = PiRGBArray(camera, size=tuple(conf["resolution"]))
+        with PiCamera() as camera:
+            # initialize the camera and grab a reference to the raw camera capture
+            #camera = PiCamera()
+            camera.resolution = tuple(conf["resolution"])
+            camera.framerate = conf["fps"]
+            rawCapture = PiRGBArray(camera, size=tuple(conf["resolution"]))
 
-        # allow the camera to warmup, then initialize the average frame, last
-        # uploaded timestamp, and frame motion counter
-        print("[INFO] warming up...")
-        time.sleep(conf["camera_warmup_time"])
-        avg = None
-        lastUploaded = datetime.datetime.now()
-        motionCounter = 0
+            # allow the camera to warmup, then initialize the average frame, last
+            # uploaded timestamp, and frame motion counter
+            print("[INFO] warming up...")
+            time.sleep(conf["camera_warmup_time"])
+            avg = None
+            lastUploaded = datetime.datetime.now()
+            motionCounter = 0
 
-        camera.capture(rawCapture, format="bgr")
-        fframe = rawCapture.array
-        fframe = imutils.resize(fframe, width=500)
-        gray = cv2.cvtColor(fframe, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+            camera.capture(rawCapture, format="bgr")
+            fframe = rawCapture.array
+            fframe = imutils.resize(fframe, width=500)
+            gray = cv2.cvtColor(fframe, cv2.COLOR_BGR2GRAY)
+            gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
-        # if the average frame is None, initialize it
-        print("[INFO] starting background model...")
-        avg = gray.copy().astype("float")
-        rawCapture.truncate(0)
-        frames=0
-        fps=0
-        sample_time=0
+            # if the average frame is None, initialize it
+            print("[INFO] starting background model...")
+            avg = gray.copy().astype("float")
+            rawCapture.truncate(0)
+            frames=0
+            fps=0
+            sample_time=0
 
-        for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+            for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 
-            frame = f.array
-            # generator
-            #frames_iterator = cls.frames_rgb()
-            #for frame in frames_iterator:
+                frame = f.array
+                # generator
+                #frames_iterator = cls.frames_rgb()
+                #for frame in frames_iterator:
 
-            # exit thread if there is a client
-            if BaseCamera.event.events:
-                    #frames_iterator.close()
-                print('Client detected, switching to stream thread.')
-                cv2.destroyAllWindows()
-                BaseCamera.detect_thread_handle = None
-                rawCapture.truncate(0)
-                camera = None
-                break
+                # exit thread if there is a client
 
-            timestamp = datetime.datetime.now()
-            text = "Unoccupied"
+                timestamp = datetime.datetime.now()
+                text = "Unoccupied"
 
-            # resize the frame, convert it to grayscale, and blur it
-            frame = imutils.resize(frame, width=500)
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # resize the frame, convert it to grayscale, and blur it
+                frame = imutils.resize(frame, width=500)
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            # find faces in frame
-            faces = cls.detect_face(gray, cascade)
+                # find faces in frame
+                faces = cls.detect_face(gray, cascade)
 
-            # find movement in frame based on previous
-            contours = cls.detect_motion(gray, avg, conf)
+                # find movement in frame based on previous
+                contours = cls.detect_motion(gray, avg, conf)
 
-            #draw squares around detected faces"
-            for (x, y, w, h) in faces:
-                #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                text = "Occupied"
+                #draw squares around detected faces"
+                for (x, y, w, h) in faces:
+                    #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    text = "Occupied"
 
-            # draw sqares around contours
-            for c in contours:
-                # if the contour is too small, ignore it
-                if cv2.contourArea(c) < conf["min_area"]:
-                        continue
+                # draw sqares around contours
+                for c in contours:
+                    # if the contour is too small, ignore it
+                    if cv2.contourArea(c) < conf["min_area"]:
+                            continue
 
-                # compute the bounding box for the contour, draw it on the frame,
-                # and update the text
-                (x, y, w, h) = cv2.boundingRect(c)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                text = "Occupied"
-
-                
-            # draw the text and timestamp on the frame
-            ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-            cv2.putText(frame, "<{}>".format(text), (10, 20),
-                cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 0, 0), 2)
-            cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_COMPLEX,
-                0.35, (255, 0, 0), 1)
-
-
-            # check to see if the room is occupied
-            if text == "Occupied":
-                # check to see if enough time has passed between uploads
-                if (timestamp - lastUploaded).seconds >= conf["min_upload_seconds"]:
-                    # increment the motion counter
-                    motionCounter += 1
-
-                    # check to see if the number of frames with consistent motion is
-                    # high enough
-                    if motionCounter >= conf["min_motion_frames"]:
-                        # check to see if dropbox sohuld be used
-                        if conf["use_dropbox"]:
-                            # write the image to temporary file
-                            t = TempImage()
-                            cv2.imwrite(t.path, frame)
-
-                            # upload the image to Dropbox and cleanup the tempory image
-                            print("[UPLOAD] {}".format(ts))
-                            path = "/{base_path}/{timestamp}.jpg".format(
-                                base_path=conf["dropbox_base_path"], timestamp=ts)
-                            client.files_upload(open(t.path, "rb").read(), path)
-                            t.cleanup()
-
-                        # update the last uploaded timestamp and reset the motion
-                        # counter
-                        lastUploaded = timestamp
-                        motionCounter = 0
-
-            # otherwise, the room is not occupied
-            else:
-                    motionCounter = 0
-
-            # check to see if the frames should be displayed to screen
-            if conf["show_video"]:
-                    # display the security feed
-                    cv2.imshow("Security Feed", frame)
-                    key = cv2.waitKey(1) & 0xFF
-
-                    # if the `q` key is pressed, break from the lop
-                    if key == ord("q"):
-                            break
+                    # compute the bounding box for the contour, draw it on the frame,
+                    # and update the text
+                    (x, y, w, h) = cv2.boundingRect(c)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    text = "Occupied"
 
                     
-            # clear the stream in preparation for the next frame
-            rawCapture.truncate(0)
-        
+                # draw the text and timestamp on the frame
+                ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
+                cv2.putText(frame, "<{}>".format(text), (10, 20),
+                    cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 0, 0), 2)
+                cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_COMPLEX,
+                    0.35, (255, 0, 0), 1)
+
+
+                # check to see if the room is occupied
+                if text == "Occupied":
+                    # check to see if enough time has passed between uploads
+                    if (timestamp - lastUploaded).seconds >= conf["min_upload_seconds"]:
+                        # increment the motion counter
+                        motionCounter += 1
+
+                        # check to see if the number of frames with consistent motion is
+                        # high enough
+                        if motionCounter >= conf["min_motion_frames"]:
+                            # check to see if dropbox sohuld be used
+                            if conf["use_dropbox"]:
+                                # write the image to temporary file
+                                t = TempImage()
+                                cv2.imwrite(t.path, frame)
+
+                                # upload the image to Dropbox and cleanup the tempory image
+                                print("[UPLOAD] {}".format(ts))
+                                path = "/{base_path}/{timestamp}.jpg".format(
+                                    base_path=conf["dropbox_base_path"], timestamp=ts)
+                                client.files_upload(open(t.path, "rb").read(), path)
+                                t.cleanup()
+
+                            # update the last uploaded timestamp and reset the motion
+                            # counter
+                            lastUploaded = timestamp
+                            motionCounter = 0
+
+                # otherwise, the room is not occupied
+                else:
+                        motionCounter = 0
+
+                # check to see if the frames should be displayed to screen
+                if conf["show_video"]:
+                        # display the security feed
+                        cv2.imshow("Security Feed", frame)
+                        key = cv2.waitKey(1) & 0xFF
+
+                        # if the `q` key is pressed, break from the lop
+                        if key == ord("q"):
+                                break
+
+                        
+                # clear the stream in preparation for the next frame
+                rawCapture.truncate(0)
+            
+                if BaseCamera.event.events:
+                        #frames_iterator.close()
+                    print('Client detected, switching to stream thread.')
+                    cv2.destroyAllWindows()
+                    BaseCamera.detect_thread_handle = None
+                    break

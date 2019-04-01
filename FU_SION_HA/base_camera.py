@@ -56,7 +56,7 @@ class CameraEvent(object):
                 # did not process a previous frame
                 # if the event stays set for more than 5 seconds, then assume
                 # the client is gone and remove it
-                if now - event[1] > 10:
+                if now - event[1] > 5:
                     remove = ident
         if remove:
             del self.events[remove]
@@ -92,6 +92,12 @@ class BaseCamera(object):
                 time.sleep(0)
 
 
+    @classmethod
+    def initial_call(cls):
+        cls.detect_thread_handle = threading.Thread(target=cls.detect_thread)
+        cls.detect_thread_handle.start()
+
+        
     # First method called by client thread when client connects via flask
     def get_frame(self):
         """Return the current camera frame."""
@@ -152,7 +158,7 @@ class BaseCamera(object):
 
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
-            if time.time() - BaseCamera.last_access > 20:
+            if time.time() - BaseCamera.last_access > 10:
                 frames_iterator.close()
                 BaseCamera.event.destroy()
                 print('Stopping camera thread due to inactivity.')
@@ -226,7 +232,7 @@ class BaseCamera(object):
                 # exit thread if there is a client
 
                 timestamp = datetime.datetime.now()
-                text = "Unoccupied"
+                text = "Idle"
 
                 # resize the frame, convert it to grayscale, and blur it
                 frame = imutils.resize(frame, width=500)
@@ -242,7 +248,7 @@ class BaseCamera(object):
                 for (x, y, w, h) in faces:
                     #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                    text = "Occupied"
+                    text = "Warning"
 
                 # draw sqares around contours
                 for c in contours:
@@ -254,7 +260,7 @@ class BaseCamera(object):
                     # and update the text
                     (x, y, w, h) = cv2.boundingRect(c)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    text = "Occupied"
+                    text = "Warning"
 
                     
                 # draw the text and timestamp on the frame
@@ -266,7 +272,7 @@ class BaseCamera(object):
 
 
                 # check to see if the room is occupied
-                if text == "Occupied":
+                if text == "Warning":
                     # check to see if enough time has passed between uploads
                     if (timestamp - lastUploaded).seconds >= conf["min_upload_seconds"]:
                         # increment the motion counter
@@ -276,11 +282,11 @@ class BaseCamera(object):
                         # high enough
                         if motionCounter >= conf["min_motion_frames"]:
                             # check to see if dropbox sohuld be used
+                            print("Threat detected {}".format(ts))
                             if conf["use_dropbox"]:
                                 # write the image to temporary file
                                 t = TempImage()
                                 cv2.imwrite(t.path, frame)
-
                                 # upload the image to Dropbox and cleanup the tempory image
                                 print("[UPLOAD] {}".format(ts))
                                 path = "/{base_path}/{timestamp}.jpg".format(
@@ -310,7 +316,9 @@ class BaseCamera(object):
                         
                 # clear the stream in preparation for the next frame
                 rawCapture.truncate(0)
-            
+
+                # if there is a client waiting for stream, shutdown this thread
+                # and release camera reource
                 if BaseCamera.event.events:
                         #frames_iterator.close()
                     print('Client detected, switching to stream thread.')

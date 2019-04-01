@@ -1,5 +1,5 @@
 {
-	"show_video": true,
+	"show_video": false,
 	"use_dropbox": false,
 	"dropbox_access_token": "6dGbZTzREuAAAAAAAAAAPSQcX4tC4XW4BiojXXCb9ETgy4fAWL_8dAlCvXkzZxhg",
 	"dropbox_base_path": "OpenRing",

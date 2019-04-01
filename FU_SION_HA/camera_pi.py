@@ -11,7 +11,7 @@ class Camera(BaseCamera):
         with picamera.PiCamera() as camera:
             print("Starting stream in 2 seconds")
             # let camera warm up
-            time.sleep(2)
+            time.sleep(1)
 
             stream = io.BytesIO()
             for _ in camera.capture_continuous(stream, 'jpeg',
@@ -45,3 +45,5 @@ class Camera(BaseCamera):
                 frame = imutils.resize(frame, width=500)
                 yield frame
                 rawCapture.truncate(0)
+# start detect thread
+Camera.initial_call()

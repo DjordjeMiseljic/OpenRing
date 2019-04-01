@@ -4,7 +4,7 @@
 	"dropbox_access_token": "6dGbZTzREuAAAAAAAAAAPSQcX4tC4XW4BiojXXCb9ETgy4fAWL_8dAlCvXkzZxhg",
 	"dropbox_base_path": "OpenRing",
 	"min_upload_seconds": 3.0,
-	"min_motion_frames": 8,
+	"min_motion_frames": 4,
 	"camera_warmup_time": 2.5,
 	"delta_thresh": 5,
 	"resolution": [640, 480],

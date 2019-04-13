@@ -3,7 +3,7 @@
     package="com.fouste.openring">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
+    android:windowSoftInputMode="adjustPan">
 
     <application
         android:allowBackup="true"

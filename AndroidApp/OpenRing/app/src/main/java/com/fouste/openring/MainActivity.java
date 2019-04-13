@@ -2,6 +2,7 @@ package com.fouste.openring;
 
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -10,6 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +20,7 @@ import android.view.ViewGroup;
 
 import android.webkit.WebView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.StringReader;
 
@@ -31,8 +34,11 @@ public class MainActivity extends AppCompatActivity {
      * may be best to switch to a
      * {@link android.support.v4.app.FragmentStatePagerAdapter}.
      */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+    Fragment left, middle, right;
+    public StreamFragment streamf = null;
 
+    private SectionsPagerAdapter mSectionsPagerAdapter;
+    private static final String TAG = "4DBG";
     /**
      * The {@link ViewPager} that will host the section contents.
      */
@@ -43,8 +49,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        // ADD TOOLBAR
+        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        //setSupportActionBar(toolbar);
+
+        
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -52,6 +61,37 @@ public class MainActivity extends AppCompatActivity {
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setCurrentItem(1);
+//        streamf = (StreamFragment) getSupportFragmentManager().findFragmentById(R.id.streamFragment);
+//        if(streamf==null)
+//            Log.i(TAG, "NULL EXEPTION");
+//        else
+//            Log.i(TAG, "ALL GOOD HOSS");
+
+
+        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
+            @Override
+            public void onPageSelected(int position) {
+                // Check if this is the page you want.
+                switch(position){
+                    case 0:
+                        Log.i(TAG, "LEFT");
+                        ((StreamFragment)right).disconnect();
+                        break;
+                    case 1:
+                        Log.i(TAG, "MIDDLE");
+                        ((StreamFragment)right).disconnect();
+                        break;
+                    case 2:
+                        Log.i(TAG, "RIGHT");
+                        ((StreamFragment)right).connect();
+                        break;
+                }
+
+            }
+        });
+
+
 
 //        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 //        fab.setOnClickListener(new View.OnClickListener() {
@@ -143,19 +183,21 @@ public class MainActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            Fragment fragment = null;
             switch(position){
                 case 0:
-                    fragment = new HomeFragment();
-                    break;
+                    if(left == null)
+                        left = new OptionsFragment();
+                    return left;
                 case 1:
-                    fragment = new OptionsFragment();
-                    break;
+                    if(middle== null)
+                        middle = new HomeFragment();
+                    return middle;
                 case 2:
-                    fragment = new StreamFragment();
-                    break;
+                    if(right== null)
+                        right = new StreamFragment();
+                    return right;
             }
-            return fragment;
+            return null;
         }
 
         @Override

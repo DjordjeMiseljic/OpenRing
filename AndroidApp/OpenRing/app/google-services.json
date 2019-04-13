@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "123919197313",
+    "firebase_url": "https://openring-5c048.firebaseio.com",
+    "project_id": "openring-5c048",
+    "storage_bucket": "openring-5c048.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123919197313:android:e3b2dc9117319c1d",
+        "android_client_info": {
+          "package_name": "com.fouste.openring"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "123919197313-1pf751lc9hl15pcqap7s54aioiv79tkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGcc65U-wngVDS-QTxNdUA5gcKu2BrKik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "123919197313-1pf751lc9hl15pcqap7s54aioiv79tkk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

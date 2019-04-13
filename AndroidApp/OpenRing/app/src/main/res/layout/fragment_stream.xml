@@ -12,7 +12,10 @@
     <WebView
         android:id="@+id/streamWebView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="1dp"
+        android:layout_marginEnd="5dp">
 
     </WebView>
 

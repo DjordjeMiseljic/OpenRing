@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.inputmethodservice.ExtractEditText;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import org.w3c.dom.Text;
  * A simple {@link Fragment} subclass.
  */
 public class OptionsFragment extends Fragment {
+    private static final String TAG = "4DBG";
 
 
     EditText adressInput;
@@ -60,10 +62,11 @@ public class OptionsFragment extends Fragment {
 
 
     public void saveData(View view) {
-        SharedPreferences sharedPref = this.getActivity().getSharedPreferences("defaultValues",0);
+        SharedPreferences sharedPref = this.getActivity().getSharedPreferences("userConf",0);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString("webAdress",adressInput.getText().toString());
         editor.apply();
+
 
         Toast.makeText(this.getActivity(), "Data Saved", Toast.LENGTH_LONG).show();
     }

@@ -48,11 +48,8 @@ public class StreamFragment extends Fragment {
         return view;
     }
 
-    @Override
-    public void onPause() {
-        webView.loadUrl("");
-        super.onPause();
-    }
+
+
 
     public void disconnect(){
         Log.i(TAG, "DISCONNECT");

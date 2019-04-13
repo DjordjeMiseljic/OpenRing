@@ -37,13 +37,28 @@ public class MainActivity extends AppCompatActivity {
      */
     Fragment left, middle, right;
     public StreamFragment streamf = null;
-
+    private int currPos=1;
     private SectionsPagerAdapter mSectionsPagerAdapter;
     private static final String TAG = "4DBG";
     /**
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+
+    @Override
+    public void onPause() {
+        ((StreamFragment)right).disconnect();
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        if(currPos==2)
+            ((StreamFragment)right).connect();
+        super.onResume();
+    }
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,14 +94,17 @@ public class MainActivity extends AppCompatActivity {
                 switch(position){
                     case 0:
                         Log.i(TAG, "LEFT");
+                        currPos=0;
                         ((StreamFragment)right).disconnect();
                         break;
                     case 1:
                         Log.i(TAG, "MIDDLE");
+                        currPos=1;
                         ((StreamFragment)right).disconnect();
                         break;
                     case 2:
                         Log.i(TAG, "RIGHT");
+                        currPos=2;
                         ((StreamFragment)right).connect();
                         break;
                 }

@@ -1,5 +1,10 @@
 package com.fouste.openring;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
@@ -23,9 +28,18 @@ import android.webkit.WebView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.FirebaseInstanceIdService;
+import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.messaging.FirebaseMessagingService;
+
 import java.io.StringReader;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -35,15 +49,98 @@ public class MainActivity extends AppCompatActivity {
      * may be best to switch to a
      * {@link android.support.v4.app.FragmentStatePagerAdapter}.
      */
-    Fragment left, middle, right;
-    public StreamFragment streamf = null;
+    private static final String TAG = "4DBG";
+
+    private String token;
+    private BroadcastReceiver mReceiver;
+    private Fragment left, middle, right;
     private int currPos=1;
     private SectionsPagerAdapter mSectionsPagerAdapter;
-    private static final String TAG = "4DBG";
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    private ViewPager mViewPager;
+    public ViewPager mViewPager;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        // ADD TOOLBAR
+        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        //setSupportActionBar(toolbar);
+
+
+        // Create the adapter that will return a fragment for each of the three
+        // primary sections of the activity.
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+
+        // Set up the ViewPager with the sections adapter.
+        mViewPager = (ViewPager) findViewById(R.id.container);
+        mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setCurrentItem(1);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
+        IntentFilter intentFilter = new IntentFilter(
+                "com.fouste.openring");
+        mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+//                //extract our message from intent
+//                String msg_for_me = intent.getStringExtra("some_msg");
+//                //log our message value
+//                Log.i(TAG, "BCAST RECIEVED");
+//                mViewPager.setCurrentItem(2,true);
+                  Toast.makeText(MainActivity.this, "Detection", Toast.LENGTH_LONG).show();
+            }
+        };
+        this.registerReceiver(mReceiver, intentFilter);
+
+
+
+        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
+            @Override
+            public void onPageSelected(int position) {
+                // Check if this is the page you want.
+                switch(position){
+                    case 0:
+                        Log.i(TAG, "<main> LEFT");
+                        currPos=0;
+                        ((StreamFragment)right).disconnect();
+                        break;
+                    case 1:
+                        Log.i(TAG, "<main> MIDDLE");
+                        currPos=1;
+                        ((StreamFragment)right).disconnect();
+                        break;
+                    case 2:
+                        Log.i(TAG, "<main> RIGHT");
+                        currPos=2;
+                        ((StreamFragment)right).connect();
+                        break;
+                }
+
+            }
+        });
+
+
+        FirebaseApp.initializeApp(this);
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener( MainActivity.this,  new OnSuccessListener<InstanceIdResult>() {
+            @Override
+            public void onSuccess(InstanceIdResult instanceIdResult) {
+                String token = instanceIdResult.getToken();
+                Log.i(TAG,"Token: "+ token);
+            }
+        });
+        //Log.i(TAG, "<main> static get token: "+ MyFirebaseMessagingService.getToken(this));
+        //token = MyFirebaseMessagingService.getToken(this);
+        //getSharedPreferences("_", MODE_PRIVATE).edit().putString("fb", token).apply();
+        //Log.i(TAG, "<main> get token: "+ token);
+
+
+
+
+
+    } // END OF ON CREATE *****
+
+
 
     @Override
     public void onPause() {
@@ -57,138 +154,6 @@ public class MainActivity extends AppCompatActivity {
             ((StreamFragment)right).connect();
         super.onResume();
     }
-
-
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // ADD TOOLBAR
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
-
-        
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-        mViewPager.setCurrentItem(1);
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-
-//        streamf = (StreamFragment) getSupportFragmentManager().findFragmentById(R.id.streamFragment);
-//        if(streamf==null)
-//            Log.i(TAG, "NULL EXEPTION");
-//        else
-//            Log.i(TAG, "ALL GOOD HOSS");
-
-
-        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
-            @Override
-            public void onPageSelected(int position) {
-                // Check if this is the page you want.
-                switch(position){
-                    case 0:
-                        Log.i(TAG, "LEFT");
-                        currPos=0;
-                        ((StreamFragment)right).disconnect();
-                        break;
-                    case 1:
-                        Log.i(TAG, "MIDDLE");
-                        currPos=1;
-                        ((StreamFragment)right).disconnect();
-                        break;
-                    case 2:
-                        Log.i(TAG, "RIGHT");
-                        currPos=2;
-                        ((StreamFragment)right).connect();
-                        break;
-                }
-
-            }
-        });
-
-
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
-
-    }
-
-
-//    @Override
-//    public void onBackPressed() {
-//        super.onBackPressed();
-//    }
-
-
-
-    //    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
-//
-//    /**
-//     * A placeholder fragment containing a simple view.
-//     */
-//    public static class PlaceholderFragment extends Fragment {
-//        /**
-//         * The fragment argument representing the section number for this
-//         * fragment.
-//         */
-//        private static final String ARG_SECTION_NUMBER = "section_number";
-//
-//        public PlaceholderFragment() {
-//        }
-//
-//        /**
-//         * Returns a new instance of this fragment for the given section
-//         * number.
-//         */
-//        public static PlaceholderFragment newInstance(int sectionNumber) {
-//            PlaceholderFragment fragment = new PlaceholderFragment();
-//            Bundle args = new Bundle();
-//            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-//            fragment.setArguments(args);
-//            return fragment;
-//        }
-//
-//        @Override
-//        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-//                                 Bundle savedInstanceState) {
-//            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-//            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-//            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-//            return rootView;
-//        }
-//    }
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -227,4 +192,10 @@ public class MainActivity extends AppCompatActivity {
             return 3;
         }
     }
+
+
+
+
+
+
 }

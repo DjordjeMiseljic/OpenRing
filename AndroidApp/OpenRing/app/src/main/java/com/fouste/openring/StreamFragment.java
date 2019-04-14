@@ -52,12 +52,12 @@ public class StreamFragment extends Fragment {
 
 
     public void disconnect(){
-        Log.i(TAG, "DISCONNECT");
+        Log.i(TAG, "<strm> DISCONNECT");
 
         webView.loadUrl("");
     }
     public void connect(){
-        Log.i(TAG, "CONNECT");
+        Log.i(TAG, "<strm> CONNECT");
         //extract saved web adress
         SharedPreferences sharedPref = this.getActivity().getSharedPreferences("userConf", Context.MODE_PRIVATE);
         String url = sharedPref.getString("webAdress","http://188.2.18.204:5000");

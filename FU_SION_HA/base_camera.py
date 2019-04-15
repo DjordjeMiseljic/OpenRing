@@ -12,14 +12,11 @@ import cv2
 
 try:
     from greenlet import getcurrent as get_ident
-    print("<get identificator> imported from greenlet")
 except ImportError:
     try:
         from thread import get_ident
-        print("<get identificator> imported from thread")
     except ImportError:
         from _thread import get_ident
-        print("<get identificator> imported from _thread")
 
 
 
@@ -27,7 +24,7 @@ except ImportError:
 class CameraEvent(object):
     """An Event-like class that signals all active clients when a new frame is available.  """
     def __init__(self):
-        print('CAMERA EVENT : Starting init function')
+        #print('[INFO] CAMERA EVENT : Starting init function')
         self.events = {}
 
     def wait(self):
@@ -82,7 +79,7 @@ class BaseCamera(object):
 
     def __init__(self):
         """Start the background camera thread if it isn't running yet."""
-        print('BASE CAMERA : Starting init function')
+        #print('[INFO] BASE CAMERA : Starting init function')
         if BaseCamera.stream_thread_handle is None:
             BaseCamera.last_access = time.time()
 
@@ -155,7 +152,7 @@ class BaseCamera(object):
     @classmethod
     def stream_thread(cls):
         """Camera background stream thread."""
-        print('Starting stream thread.')
+        print('[INFO] Starting stream thread')
         frames_iterator = cls.frames_jpeg(cls.conf)
         # MAIN FOR LOOP
         for frame in frames_iterator:
@@ -168,7 +165,7 @@ class BaseCamera(object):
             if time.time() - BaseCamera.last_access > 10:
                 frames_iterator.close()
                 BaseCamera.event.destroy()
-                print('Stopping camera thread due to inactivity.')
+                print('[INFO] Stopping camera thread due to inactivity')
                 break
         BaseCamera.stream_thread_handle = None
         # start detect thread
@@ -180,11 +177,11 @@ class BaseCamera(object):
     @classmethod
     def detect_thread(cls):
         """Camera background detect thread."""
-        print('Starting detect thread.')
+        print('[INFO] Starting detect thread')
 
         # build a cascade face classifier
         cascade = cv2.CascadeClassifier(cls.cascade_path)
-        print("[SUCCESS] face classifier built")
+        print("[SUCCESS] Face detection object built")
 
         # filter warnings, load the configuration and initialize the Dropbox client
         warnings.filterwarnings("ignore")
@@ -194,7 +191,7 @@ class BaseCamera(object):
         if cls.conf["use_dropbox"]:
             # connect to dropbox and start the session authorization process
             client = dropbox.Dropbox(cls.conf["dropbox_access_token"])
-            print("[SUCCESS] dropbox account linked")
+            print("[SUCCESS] Dropbox account linked")
 
         # initialize some shit
         avg = None
@@ -205,6 +202,7 @@ class BaseCamera(object):
 
         frames_iterator = cls.frames_rgb(cls.conf)
         # MAIN FOR LOOP
+        print("[SUCCESS] Data initialized")
         for frame in frames_iterator:
 
 
@@ -214,7 +212,7 @@ class BaseCamera(object):
                 gray = cv2.cvtColor(fframe, cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
                 # initialize average frame
-                print("[INFO] starting background model...")
+                print("[INFO] Detection thread started")
                 avg = gray.copy().astype("float")
                 init_frame = 0;
                 continue
@@ -268,13 +266,13 @@ class BaseCamera(object):
                     # high enough
                     if motionCounter >= cls.conf["min_motion_frames"]:
                         # check to see if dropbox sohuld be used
-                        print("Threat detected {}".format(ts))
+                        print("[WARNING] Threat detected {}".format(ts))
                         if cls.conf["use_dropbox"]:
                             # write the image to temporary file
                             t = TempImage()
                             cv2.imwrite(t.path, frame)
                             # upload the image to Dropbox and cleanup the tempory image
-                            print("[UPLOAD] {}".format(ts))
+                            print("[INET] Uploading captured photo{}".format(ts))
                             path = "/{base_path}/{timestamp}.jpg".format(
                                 base_path=cls.conf["dropbox_base_path"], timestamp=ts)
                             client.files_upload(open(t.path, "rb").read(), path)
@@ -301,7 +299,7 @@ class BaseCamera(object):
             # if there is a client waiting for stream, shutdown this thread
             # and release camera reource
             if BaseCamera.event.events:
-                print('Client detected, switching to stream thread.')
+                print('[INFO] Client detected, switching to stream thread')
                 frames_iterator.close()
                 cv2.destroyAllWindows()
                 BaseCamera.detect_thread_handle = None

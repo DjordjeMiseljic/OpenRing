@@ -13,7 +13,7 @@ class Camera(BaseCamera):
         with picamera.PiCamera() as camera:
             camera.resolution = tuple(conf["resolution"])
             camera.framerate = conf["fps"]
-            print("[INFO] warming up...")
+            print("[INFO] Camera warming up")
             time.sleep(conf["camera_warmup_time"])
 
             stream = io.BytesIO()
@@ -39,7 +39,7 @@ class Camera(BaseCamera):
 
             # allow the camera to warmup, then initialize the average frame, last
             # uploaded timestamp, and frame motion counter
-            print("[INFO] warming up...")
+            print("[INFO] Camera warming up")
             time.sleep(conf["camera_warmup_time"])
 
             for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):

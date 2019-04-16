@@ -1,6 +1,7 @@
 from support.pyimagesearch.tempimage import TempImage
 from picamera.array import PiRGBArray
 from picamera import PiCamera
+from pyfcm import FCMNotification
 import warnings
 import datetime
 import dropbox
@@ -194,9 +195,11 @@ class BaseCamera(object):
             print("[SUCCESS] Dropbox account linked")
 
         # initialize some shit
+        push_service = FCMNotification(cls.conf["api_key"])
         avg = None
         lastUploaded = datetime.datetime.now()
-        motionCounter = 0
+        motionFrameCounter = 0
+        faceFrameCounter = 0
         sample_time = 0
         init_frame = 1
 
@@ -218,7 +221,8 @@ class BaseCamera(object):
                 continue
                     
             timestamp = datetime.datetime.now()
-            text = "Idle"
+            motion_threat = False;
+            face_threat = False;
 
             # resize the frame, convert it to grayscale, and blur it
             frame = imutils.resize(frame, width=500)
@@ -238,35 +242,59 @@ class BaseCamera(object):
             for (x, y, w, h) in faces:
                 #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                text = "Warning"
+                face_threat = True
+
             # draw sqares around contours
             for c in contours:
                 # if the contour is too small, ignore it
                 if cv2.contourArea(c) < cls.conf["min_area"]:
                         continue
                 # compute the bounding box for the contour, draw it on the frame,
-                # and update the text
+                # and update the threat 
                 (x, y, w, h) = cv2.boundingRect(c)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                text = "Warning"
-            # draw the text and timestamp on the frame
+                motion_threat = True
+            # draw the timestamp on the frame
             ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-            cv2.putText(frame, "<{}>".format(text), (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 0, 0), 2)
             cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_COMPLEX, 0.35, (255, 0, 0), 1)
 
 
+
+            #update counters
+            if motion_threat == True:
+                motionFrameCounter += 1
+            else:
+                motionFrameCounter = 0
+
+            if face_threat == True:
+                faceFrameCounter += 1
+            else:
+                faceFrameCounter = 0
+
+
+
             # check to see if the room is occupied
-            if text == "Warning":
+            if motion_threat == True or face_threat == True:
                 # check to see if enough time has passed between uploads
                 if (timestamp - lastUploaded).seconds >= cls.conf["min_upload_seconds"]:
                     # increment the motion counter
-                    motionCounter += 1
 
                     # check to see if the number of frames with consistent motion is
                     # high enough
-                    if motionCounter >= cls.conf["min_motion_frames"]:
+                    if motionFrameCounter >= cls.conf["min_motion_frames"] or faceFrameCounter >= cls.conf["min_face_frames"]:
                         # check to see if dropbox sohuld be used
-                        print("[WARNING] Threat detected {}".format(ts))
+                        # configure notification
+                        message_title = "Security Warning"
+                        if motionFrameCounter >= cls.conf["min_motion_frames"] :
+                            message_body = "Movement detected on surveilance camera"
+                            print("[WARNING] Movement detected {}".format(ts))
+                        else:
+                            message_body = "Person detected on surveillance camera"
+                            print("[WARNING] Face detected {}".format(ts))
+                        # send notification via firebase
+                        push_service.notify_single_device(registration_id=cls.conf["token"],
+                                                          message_title=message_title, message_body=message_body)
+                        
                         if cls.conf["use_dropbox"]:
                             # write the image to temporary file
                             t = TempImage()
@@ -277,14 +305,10 @@ class BaseCamera(object):
                                 base_path=cls.conf["dropbox_base_path"], timestamp=ts)
                             client.files_upload(open(t.path, "rb").read(), path)
                             t.cleanup()
-                        # update the last uploaded timestamp and reset the motion
-                        # counter
+                        # update the last uploaded timestamp reset counters
                         lastUploaded = timestamp
-                        motionCounter = 0
-            # otherwise, the room is not occupied
-            else:
-                    motionCounter = 0
-
+                        faceFrameCounter = 0
+                        motionFrameCounter = 0
 
             # check to see if the frames should be displayed to screen
             if cls.conf["show_video"]:

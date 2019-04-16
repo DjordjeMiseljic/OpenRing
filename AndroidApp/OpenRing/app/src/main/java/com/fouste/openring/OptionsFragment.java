@@ -1,9 +1,12 @@
 package com.fouste.openring;
 
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.inputmethodservice.ExtractEditText;
+import android.net.sip.SipSession;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -27,13 +30,26 @@ public class OptionsFragment extends Fragment {
 
     EditText adressInput;
     TextView adressInfo;
-
+    SocketCall activityCommander;
 
 
     public OptionsFragment() {
         // Required empty public constructor
     }
 
+    // Make interface
+    public interface SocketCall{
+        void sendMessage(String  message);
+    }
+
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if(context instanceof SocketCall) {
+            activityCommander = (SocketCall) context;
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -53,7 +69,15 @@ public class OptionsFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Call save data method
                 saveData(v);
+                // Send update to server via interface activityCommander
+                SharedPreferences sharedPref = getActivity().getSharedPreferences("userConf", Context.MODE_PRIVATE);
+                String ip = sharedPref.getString("serverIp","188.2.18.204");
+                Log.i(TAG,"Sending mesage "+ip);
+
+                activityCommander.sendMessage("ip is: "+ip);
+
             }
         });
         return view;
@@ -64,9 +88,8 @@ public class OptionsFragment extends Fragment {
     public void saveData(View view) {
         SharedPreferences sharedPref = this.getActivity().getSharedPreferences("userConf",0);
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString("webAdress",adressInput.getText().toString());
+        editor.putString("ip",adressInput.getText().toString());
         editor.apply();
-
 
         Toast.makeText(this.getActivity(), "Data Saved", Toast.LENGTH_LONG).show();
     }

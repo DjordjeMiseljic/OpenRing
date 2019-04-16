@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -37,9 +39,15 @@ import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.messaging.FirebaseMessagingService;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity implements OptionsFragment.SocketCall {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -57,7 +65,6 @@ public class MainActivity extends AppCompatActivity{
     private int currPos=1;
     private SectionsPagerAdapter mSectionsPagerAdapter;
     public ViewPager mViewPager;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,17 +141,17 @@ public class MainActivity extends AppCompatActivity{
         //getSharedPreferences("_", MODE_PRIVATE).edit().putString("fb", token).apply();
         //Log.i(TAG, "<main> get token: "+ token);
 
-
-
-
-
+        //open connection
     } // END OF ON CREATE *****
-
-
 
     @Override
     public void onPause() {
         ((StreamFragment)right).disconnect();
+
+        //close connection
+//        if (mTcpClient != null) {
+//            mTcpClient.stopClient();
+//        }
         super.onPause();
     }
 
@@ -193,9 +200,13 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    @Override
+    public void sendMessage(String message)
+    {
+
+         new SendMessage().execute("fucking work\n");
+
+    }
 
 
-
-
-
-}
+} // end of class

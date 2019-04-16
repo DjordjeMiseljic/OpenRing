@@ -32,12 +32,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.i(TAG,"<fbms> Notification title is " + remoteMessage.getNotification().getTitle());
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
-
         //broadcast to mainActivity, so it can change fragment
         Intent i = new Intent();
         i.setAction("com.fouste.openring");
         i.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         sendBroadcast(i);
+
 
 
 

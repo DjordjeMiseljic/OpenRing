@@ -60,11 +60,11 @@ public class StreamFragment extends Fragment {
         Log.i(TAG, "<strm> CONNECT");
         //extract saved web adress
         SharedPreferences sharedPref = this.getActivity().getSharedPreferences("userConf", Context.MODE_PRIVATE);
-        String url = sharedPref.getString("webAdress","http://188.2.18.204:5000");
-        Log.i(TAG, url);
+        String ip = sharedPref.getString("serverIp","188.2.18.204");
+        Log.i(TAG, "http://" + ip + ":5000");
 
         //setup url
-        webView.loadUrl(url);
+        webView.loadUrl("http://" + ip + ":5000");
     }
 
 }

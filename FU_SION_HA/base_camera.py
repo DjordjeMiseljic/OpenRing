@@ -162,23 +162,29 @@ class BaseCamera(object):
         """Receive data from client via tcp communication"""
         print('[INFO] Starting socket thread')
         serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serv.bind(('192.168.0.16', 5005))
-        serv.listen(5)
+        serv.bind(('192.168.0.16', 5004))
+        serv.listen(1)
         
         while True:
             conn, addr = serv.accept()
-            from_client = ''
-
-            while True:
-                data = conn.recv(4096)
-                if not data: 
-                    break
-                from_client += data
-                print('[TCP] Receiveing data from client:')
-                print (from_client)
-                #conn.send("I am SERVER\n")
-            conn.close()
-            print ('client disconnected')
+            try:
+                from_client = ''
+                print('[TCP] Accepted connection from address: {}',addr)
+                while True:
+                    print('[TCP] Waiting to recieve data')
+                    data = conn.recv(1024)
+                    print('[TCP] Data recieved')
+                    if not data: 
+                        print('[TCP] No more data')
+                        break
+                    from_client += data.decode()
+                    print('[TCP] Data recieved from client:')
+                    print (from_client)
+                    conn.send("Alls good h0ss\n".encode())
+                    print('[TCP] Message sent to client')
+            finally:
+                conn.close()
+                print ('client disconnected')
 
 
     @classmethod

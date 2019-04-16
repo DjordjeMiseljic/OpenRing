@@ -1,6 +1,8 @@
 from support.pyimagesearch.tempimage import TempImage
 from picamera.array import PiRGBArray
 from picamera import PiCamera
+from pyfcm import FCMNotification
+import socket
 import warnings
 import datetime
 import dropbox
@@ -12,14 +14,11 @@ import cv2
 
 try:
     from greenlet import getcurrent as get_ident
-    print("<get identificator> imported from greenlet")
 except ImportError:
     try:
         from thread import get_ident
-        print("<get identificator> imported from thread")
     except ImportError:
         from _thread import get_ident
-        print("<get identificator> imported from _thread")
 
 
 
@@ -27,7 +26,7 @@ except ImportError:
 class CameraEvent(object):
     """An Event-like class that signals all active clients when a new frame is available.  """
     def __init__(self):
-        print('CAMERA EVENT : Starting init function')
+        #print('[INFO] CAMERA EVENT : Starting init function')
         self.events = {}
 
     def wait(self):
@@ -70,8 +69,10 @@ class CameraEvent(object):
 
 
 class BaseCamera(object):
-    stream_thread_handle = None  # background thread that reads frames from camera
-    detect_thread_handle = None  # background thread that reads frames from camera
+    stream_thread_handle = None  # background thread that reads frames from camera and sends them to clients
+    detect_thread_handle = None  # background thread that acts as surveillance camera
+    socket_thread_handle = None  # background thread that recieves data via tcp
+
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
@@ -82,13 +83,14 @@ class BaseCamera(object):
 
     def __init__(self):
         """Start the background camera thread if it isn't running yet."""
-        print('BASE CAMERA : Starting init function')
+        #print('[INFO] BASE CAMERA : Starting init function')
         if BaseCamera.stream_thread_handle is None:
             BaseCamera.last_access = time.time()
 
             # start background frame thread
             BaseCamera.stream_thread_handle = threading.Thread(target=self.stream_thread)
             BaseCamera.stream_thread_handle.start()
+
 
             # wait until frames are available
             while self.get_frame() is None:
@@ -97,8 +99,12 @@ class BaseCamera(object):
 
     @classmethod
     def initial_call(cls):
+        # start background detect thread
         cls.detect_thread_handle = threading.Thread(target=cls.detect_thread)
         cls.detect_thread_handle.start()
+        # start background socket thread
+        cls.socket_thread_handle = threading.Thread(target=cls.socket_thread)
+        cls.socket_thread_handle.start()
 
         
     # First method called by client thread when client connects via flask
@@ -151,11 +157,34 @@ class BaseCamera(object):
         """"Generator that returns frames from the camera in rgb format"""
         raise RuntimeError('Must be implemented by subclasses.')
 
+    @classmethod
+    def socket_thread(cls):
+        """Receive data from client via tcp communication"""
+        print('[INFO] Starting socket thread')
+        serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serv.bind(('192.168.0.16', 5005))
+        serv.listen(5)
+        
+        while True:
+            conn, addr = serv.accept()
+            from_client = ''
+
+            while True:
+                data = conn.recv(4096)
+                if not data: 
+                    break
+                from_client += data
+                print('[TCP] Receiveing data from client:')
+                print (from_client)
+                #conn.send("I am SERVER\n")
+            conn.close()
+            print ('client disconnected')
+
 
     @classmethod
     def stream_thread(cls):
         """Camera background stream thread."""
-        print('Starting stream thread.')
+        print('[INFO] Starting stream thread')
         frames_iterator = cls.frames_jpeg(cls.conf)
         # MAIN FOR LOOP
         for frame in frames_iterator:
@@ -168,7 +197,7 @@ class BaseCamera(object):
             if time.time() - BaseCamera.last_access > 10:
                 frames_iterator.close()
                 BaseCamera.event.destroy()
-                print('Stopping camera thread due to inactivity.')
+                print('[INFO] Stopping camera thread due to inactivity')
                 break
         BaseCamera.stream_thread_handle = None
         # start detect thread
@@ -180,11 +209,11 @@ class BaseCamera(object):
     @classmethod
     def detect_thread(cls):
         """Camera background detect thread."""
-        print('Starting detect thread.')
+        print('[INFO] Starting detect thread')
 
         # build a cascade face classifier
         cascade = cv2.CascadeClassifier(cls.cascade_path)
-        print("[SUCCESS] face classifier built")
+        print("[SUCCESS] Face detection object built")
 
         # filter warnings, load the configuration and initialize the Dropbox client
         warnings.filterwarnings("ignore")
@@ -194,17 +223,20 @@ class BaseCamera(object):
         if cls.conf["use_dropbox"]:
             # connect to dropbox and start the session authorization process
             client = dropbox.Dropbox(cls.conf["dropbox_access_token"])
-            print("[SUCCESS] dropbox account linked")
+            print("[SUCCESS] Dropbox account linked")
 
         # initialize some shit
+        push_service = FCMNotification(cls.conf["api_key"])
         avg = None
         lastUploaded = datetime.datetime.now()
-        motionCounter = 0
+        motionFrameCounter = 0
+        faceFrameCounter = 0
         sample_time = 0
         init_frame = 1
 
         frames_iterator = cls.frames_rgb(cls.conf)
         # MAIN FOR LOOP
+        print("[SUCCESS] Data initialized")
         for frame in frames_iterator:
 
 
@@ -214,13 +246,14 @@ class BaseCamera(object):
                 gray = cv2.cvtColor(fframe, cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
                 # initialize average frame
-                print("[INFO] starting background model...")
+                print("[INFO] Detection thread started")
                 avg = gray.copy().astype("float")
                 init_frame = 0;
                 continue
                     
             timestamp = datetime.datetime.now()
-            text = "Idle"
+            motion_threat = False;
+            face_threat = False;
 
             # resize the frame, convert it to grayscale, and blur it
             frame = imutils.resize(frame, width=500)
@@ -240,53 +273,73 @@ class BaseCamera(object):
             for (x, y, w, h) in faces:
                 #print ("({0}, {1}, {2}, {3})".format(x, y, w, h))
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                text = "Warning"
+                face_threat = True
+
             # draw sqares around contours
             for c in contours:
                 # if the contour is too small, ignore it
                 if cv2.contourArea(c) < cls.conf["min_area"]:
                         continue
                 # compute the bounding box for the contour, draw it on the frame,
-                # and update the text
+                # and update the threat 
                 (x, y, w, h) = cv2.boundingRect(c)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                text = "Warning"
-            # draw the text and timestamp on the frame
+                motion_threat = True
+            # draw the timestamp on the frame
             ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-            cv2.putText(frame, "<{}>".format(text), (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 0, 0), 2)
             cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_COMPLEX, 0.35, (255, 0, 0), 1)
 
 
+
+            #update counters
+            if motion_threat == True:
+                motionFrameCounter += 1
+            else:
+                motionFrameCounter = 0
+
+            if face_threat == True:
+                faceFrameCounter += 1
+            else:
+                faceFrameCounter = 0
+
+
+
             # check to see if the room is occupied
-            if text == "Warning":
+            if motion_threat == True or face_threat == True:
                 # check to see if enough time has passed between uploads
                 if (timestamp - lastUploaded).seconds >= cls.conf["min_upload_seconds"]:
                     # increment the motion counter
-                    motionCounter += 1
 
                     # check to see if the number of frames with consistent motion is
                     # high enough
-                    if motionCounter >= cls.conf["min_motion_frames"]:
+                    if motionFrameCounter >= cls.conf["min_motion_frames"] or faceFrameCounter >= cls.conf["min_face_frames"]:
                         # check to see if dropbox sohuld be used
-                        print("Threat detected {}".format(ts))
+                        # configure notification
+                        message_title = "Security Warning"
+                        if motionFrameCounter >= cls.conf["min_motion_frames"] :
+                            message_body = "Movement detected on surveilance camera"
+                            print("[WARNING] Movement detected {}".format(ts))
+                        else:
+                            message_body = "Person detected on surveillance camera"
+                            print("[WARNING] Face detected {}".format(ts))
+                        # send notification via firebase
+                        push_service.notify_single_device(registration_id=cls.conf["token"],
+                                                          message_title=message_title, message_body=message_body)
+                        
                         if cls.conf["use_dropbox"]:
                             # write the image to temporary file
                             t = TempImage()
                             cv2.imwrite(t.path, frame)
                             # upload the image to Dropbox and cleanup the tempory image
-                            print("[UPLOAD] {}".format(ts))
+                            print("[INET] Uploading captured photo{}".format(ts))
                             path = "/{base_path}/{timestamp}.jpg".format(
                                 base_path=cls.conf["dropbox_base_path"], timestamp=ts)
                             client.files_upload(open(t.path, "rb").read(), path)
                             t.cleanup()
-                        # update the last uploaded timestamp and reset the motion
-                        # counter
+                        # update the last uploaded timestamp reset counters
                         lastUploaded = timestamp
-                        motionCounter = 0
-            # otherwise, the room is not occupied
-            else:
-                    motionCounter = 0
-
+                        faceFrameCounter = 0
+                        motionFrameCounter = 0
 
             # check to see if the frames should be displayed to screen
             if cls.conf["show_video"]:
@@ -301,7 +354,7 @@ class BaseCamera(object):
             # if there is a client waiting for stream, shutdown this thread
             # and release camera reource
             if BaseCamera.event.events:
-                print('Client detected, switching to stream thread.')
+                print('[INFO] Client detected, switching to stream thread')
                 frames_iterator.close()
                 cv2.destroyAllWindows()
                 BaseCamera.detect_thread_handle = None

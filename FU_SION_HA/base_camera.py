@@ -2,6 +2,7 @@ from support.pyimagesearch.tempimage import TempImage
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 from pyfcm import FCMNotification
+import socket
 import warnings
 import datetime
 import dropbox
@@ -68,8 +69,10 @@ class CameraEvent(object):
 
 
 class BaseCamera(object):
-    stream_thread_handle = None  # background thread that reads frames from camera
-    detect_thread_handle = None  # background thread that reads frames from camera
+    stream_thread_handle = None  # background thread that reads frames from camera and sends them to clients
+    detect_thread_handle = None  # background thread that acts as surveillance camera
+    socket_thread_handle = None  # background thread that recieves data via tcp
+
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
@@ -88,6 +91,7 @@ class BaseCamera(object):
             BaseCamera.stream_thread_handle = threading.Thread(target=self.stream_thread)
             BaseCamera.stream_thread_handle.start()
 
+
             # wait until frames are available
             while self.get_frame() is None:
                 time.sleep(0)
@@ -95,8 +99,12 @@ class BaseCamera(object):
 
     @classmethod
     def initial_call(cls):
+        # start background detect thread
         cls.detect_thread_handle = threading.Thread(target=cls.detect_thread)
         cls.detect_thread_handle.start()
+        # start background socket thread
+        cls.socket_thread_handle = threading.Thread(target=cls.socket_thread)
+        cls.socket_thread_handle.start()
 
         
     # First method called by client thread when client connects via flask
@@ -148,6 +156,29 @@ class BaseCamera(object):
     def frames_rgb(conf):
         """"Generator that returns frames from the camera in rgb format"""
         raise RuntimeError('Must be implemented by subclasses.')
+
+    @classmethod
+    def socket_thread(cls):
+        """Receive data from client via tcp communication"""
+        print('[INFO] Starting socket thread')
+        serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serv.bind(('192.168.0.16', 5005))
+        serv.listen(5)
+        
+        while True:
+            conn, addr = serv.accept()
+            from_client = ''
+
+            while True:
+                data = conn.recv(4096)
+                if not data: 
+                    break
+                from_client += data
+                print('[TCP] Receiveing data from client:')
+                print (from_client)
+                #conn.send("I am SERVER\n")
+            conn.close()
+            print ('client disconnected')
 
 
     @classmethod

@@ -33,4 +33,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.16', threaded=True)
+    app.run(host='192.168.0.16',port='5000', threaded=True, debug=False, use_reloader=False)

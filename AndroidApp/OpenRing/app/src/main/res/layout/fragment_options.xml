@@ -11,30 +11,34 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="400dp"
+        android:layout_marginBottom="600dp"
         android:ems="10"
-        android:hint="ip"
+        android:hint="IP"
         android:inputType="textWebEditText"
         android:text="Input server IP here"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/optionsWebAdressTextView"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/optionsWebAdressTextView"
         android:layout_width="wrap_content"
         android:layout_height="26dp"
         android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="40dp"
-        android:text="Input server ip"
-        android:textColor="@android:color/black"
+        android:text="Server IP"
+        android:textColor="#000000"
         android:textSize="18sp"
-        app:layout_constraintBottom_toTopOf="@+id/optionsWebAdressEditText"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.343"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.024"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/optionsSaveDataButton"
@@ -45,10 +49,110 @@
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="36dp"
         android:text="SAVE"
+        android:textColorLink="@color/colorAccent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/optionsWebAdressEditText"
-        app:layout_constraintVertical_bias="0.876" />
+        app:layout_constraintVertical_bias="1.0" />
+
+    <EditText
+        android:id="@+id/optionsDropboxEditText"
+        android:layout_width="336dp"
+        android:layout_height="47dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="ID"
+        android:inputType="textPersonName"
+        android:text="Input DropBox project ID"
+        android:textAlignment="textStart"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/optionsDropboxSwitch" />
+
+    <Switch
+        android:id="@+id/optionsDropboxSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="376dp"
+        android:switchTextAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:text="DropBox   "
+        android:textAlignment="textStart"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/optionsFaceTextView"
+        android:layout_width="180dp"
+        android:layout_height="23dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp"
+        android:text="Face detection sensitivity"
+        android:textAlignment="textStart"
+        android:textColor="#000000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/optionsWebAdressEditText" />
+
+    <TextView
+        android:id="@+id/optionsMotionTextView"
+        android:layout_width="181dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="Motion detection sensitivity"
+        android:textColor="#000000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/optionsFaceTextView" />
+
+    <SeekBar
+        android:id="@+id/optionsFaceSeekBar"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="139dp"
+        android:layout_height="19dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="40dp"
+        android:max="10"
+        android:progress="6"
+        app:layout_constraintStart_toEndOf="@+id/optionsFaceTextView"
+        app:layout_constraintTop_toBottomOf="@+id/optionsWebAdressEditText" />
+
+    <SeekBar
+        android:id="@+id/optionsMotionSeekBar"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="136dp"
+        android:layout_height="23dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="16dp"
+        android:max="10"
+        android:progress="6"
+        app:layout_constraintStart_toEndOf="@+id/optionsMotionTextView"
+        app:layout_constraintTop_toBottomOf="@+id/optionsFaceSeekBar" />
+
+    <TextView
+        android:id="@+id/optionsSecondsTextEdit"
+        android:layout_width="181dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="Time between notifications"
+        android:textColor="#000000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/optionsMotionTextView" />
+
+    <EditText
+        android:id="@+id/optionsSecondsEditText"
+        android:layout_width="62dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="16dp"
+        android:ems="10"
+        android:hint="seconds"
+        android:inputType="number"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@+id/optionsSecondsTextEdit"
+        app:layout_constraintTop_toBottomOf="@+id/optionsMotionSeekBar" />
+
 </android.support.constraint.ConstraintLayout>

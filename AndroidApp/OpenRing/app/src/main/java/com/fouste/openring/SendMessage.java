@@ -20,7 +20,8 @@ public class SendMessage extends AsyncTask <String, Void, Void> {
     protected Void doInBackground(String... params) {
         try{
             try{
-                Socket socket = new Socket("192.168.0.16",5004);
+                Log.i(TAG,"Trying to connect to server");
+                Socket socket = new Socket("188.2.18.204",5002);
                 Log.i(TAG,"Connected");
                 PrintWriter outToServer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
                 outToServer.print(params[0]);

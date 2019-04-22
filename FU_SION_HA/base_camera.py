@@ -72,12 +72,11 @@ class BaseCamera(object):
     stream_thread_handle = None  # background thread that reads frames from camera and sends them to clients
     detect_thread_handle = None  # background thread that acts as surveillance camera
     socket_thread_handle = None  # background thread that recieves data via tcp
+    conf =  None
 
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
-    # load configuration from json file
-    conf = json.load(open("support/conf.json"))
     # load definition of face for detection
     cascade_path= "support/haarcascade_frontalface_default.xml"
 
@@ -99,6 +98,8 @@ class BaseCamera(object):
 
     @classmethod
     def initial_call(cls):
+        # load configuration from json file
+        cls.fetchJSON()
         # start background detect thread
         cls.detect_thread_handle = threading.Thread(target=cls.detect_thread)
         cls.detect_thread_handle.start()
@@ -106,6 +107,21 @@ class BaseCamera(object):
         cls.socket_thread_handle = threading.Thread(target=cls.socket_thread)
         cls.socket_thread_handle.start()
 
+    @classmethod
+    def fetchJSON(cls):
+    # Fetch conf from JSON file
+        #print('[INFO] Local configuration updated')
+        jsonFile = open("support/conf.json")
+        cls.conf = json.load(jsonFile)
+        jsonFile.close()
+
+    @classmethod
+    def updateJSON(cls):
+    # Save changes to JSON file
+        #print('[INFO] JSON file updated')
+        jsonFile = open("support/conf.json", "w+")
+        jsonFile.write(json.dumps(cls.conf, indent=4))
+        jsonFile.close()
         
     # First method called by client thread when client connects via flask
     def get_frame(self):
@@ -162,33 +178,47 @@ class BaseCamera(object):
         """Receive data from client via tcp communication"""
         print('[INFO] Starting socket thread')
         serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serv.bind(('192.168.0.16', 5004))
+        serv.bind(('192.168.0.16', 5002))
         serv.listen(1)
+        print('[TCP] Listening on 192.168.0.16:5002')
         
         while True:
             conn, addr = serv.accept()
             try:
                 from_client = ''
-                print('[TCP] Accepted connection from address: {}',addr)
+                print('[TCP] Accepted connection from address: {0}'.format(addr))
                 while True:
-                    print('[TCP] Waiting to recieve data')
+                    #print('[TCP] Waiting to recieve data')
                     data = conn.recv(1024)
-                    print('[TCP] Data recieved')
+                    #print('[TCP] Data recieved')
                     if not data: 
-                        print('[TCP] No more data')
+                        #print('[TCP] No more data')
                         break
                     from_client += data.decode()
-                    print('[TCP] Data recieved from client:')
-                    print (from_client)
-                    conn.send("Alls good h0ss\n".encode())
-                    print('[TCP] Message sent to client')
+                    #print('[TCP] Data recieved from client:')
+                    #extract data
+                    #new_conf = from_client.strip();
+                    new_conf = from_client.split("=");
+                    #print ("opt: {}\n",new_conf[0])
+                    #print ("val: {}\n",new_conf[1])
+                    if(new_conf[0] == "use_dropbox"):
+                        new_conf[1] = new_conf[1] == 'true'
+
+                    if((new_conf[0])[:4] == "min_"):
+                        new_conf[1] = int(new_conf[1])
+
+                    cls.conf[new_conf[0]] = new_conf[1];
+                    cls.updateJSON()
+                    conn.send("Data recieved\n".encode())
+                    print('[TCP] property {0} changed'.format(new_conf[0]))
             finally:
                 conn.close()
-                print ('client disconnected')
+                #print ('[TCP] client disconnected')
 
 
     @classmethod
     def stream_thread(cls):
+        cls.fetchJSON()
         """Camera background stream thread."""
         print('[INFO] Starting stream thread')
         frames_iterator = cls.frames_jpeg(cls.conf)
@@ -214,6 +244,7 @@ class BaseCamera(object):
 
     @classmethod
     def detect_thread(cls):
+        cls.fetchJSON()
         """Camera background detect thread."""
         print('[INFO] Starting detect thread')
 
@@ -337,7 +368,7 @@ class BaseCamera(object):
                             t = TempImage()
                             cv2.imwrite(t.path, frame)
                             # upload the image to Dropbox and cleanup the tempory image
-                            print("[INET] Uploading captured photo{}".format(ts))
+                            print("[INET] Uploading captured photo {}".format(ts))
                             path = "/{base_path}/{timestamp}.jpg".format(
                                 base_path=cls.conf["dropbox_base_path"], timestamp=ts)
                             client.files_upload(open(t.path, "rb").read(), path)

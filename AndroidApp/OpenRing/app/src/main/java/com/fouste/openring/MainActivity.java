@@ -47,8 +47,8 @@ import java.io.StringReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class MainActivity extends AppCompatActivity implements OptionsFragment.SocketCall {
-
+public class MainActivity extends AppCompatActivity {
+//implements OptionsFragment.SocketCall
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
@@ -70,10 +70,6 @@ public class MainActivity extends AppCompatActivity implements OptionsFragment.S
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // ADD TOOLBAR
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
-
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -85,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements OptionsFragment.S
         mViewPager.setCurrentItem(1);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
+        // BROADCAST RECIEVER IS NOT NEEDED ANYMORE FOR REASONS DECLARED IN MYFIREBASE CLASS
         IntentFilter intentFilter = new IntentFilter(
                 "com.fouste.openring");
         mReceiver = new BroadcastReceiver() {
@@ -95,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements OptionsFragment.S
 //                //log our message value
 //                Log.i(TAG, "BCAST RECIEVED");
 //                mViewPager.setCurrentItem(2,true);
-                  Toast.makeText(MainActivity.this, "Detection", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Warning: Detection! Switch to video stream", Toast.LENGTH_LONG).show();
             }
         };
         this.registerReceiver(mReceiver, intentFilter);
@@ -200,13 +197,14 @@ public class MainActivity extends AppCompatActivity implements OptionsFragment.S
         }
     }
 
-    @Override
-    public void sendMessage(String message)
-    {
-
-         new SendMessage().execute("fucking work\n");
-
-    }
+    // THIS INTERFACE NOT NEEDED, SENDMESSAGE WILL BE CALLED FROM FRAGMENTS
+//    @Override
+//    public void sendMessage(String message)
+//    {
+//        Log.i(TAG,"Main called with " + message);
+//        new SendMessage().execute(message);
+//
+//    }
 
 
 } // end of class

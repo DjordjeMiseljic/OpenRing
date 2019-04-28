@@ -1,5 +1,5 @@
 # OpenRing
-Project simulating Ring security using Rpi 3 and android app.
+Project simulating shitty version of Ring security using Rpi 3 and an android app.
 Rpi captures video with camera and detects faces in python using cv3.
-When threat is detected, It sends notification to android app via internet protocol.
-User of android app will be able to see the unauthorised person via camera (and optionally communicate using mic)
+When threat is detected, It sends notification to android app via Firebase Messaging.
+User of android app is able to see the unauthorised person via live video stream.

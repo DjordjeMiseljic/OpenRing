@@ -1,0 +1,19 @@
+{
+    "dropbox_base_path": "OpenRing",
+    "use_dropbox": true,
+    "dropbox_access_token": "6dGbZTzREuAAAAAAAAAAPSQcX4tC4XW4BiojXXCb9ETgy4fAWL_8dAlCvXkzZxhg",
+    "show_video": true,
+    "min_motion_frames": 6,
+    "min_area": 5000,
+    "api_key": "AAAAm7WZSgs:APA91bEtIkVJdK_dVnRvfHrnRgQm5y3WL5bdhm4WNvarrBQWYELpcS-Gjr3C8u5iLX0GkT79b3jVWHu5EGPKP6tvr6zrC7w0xjiiX-vo7In8MUNdrDqzZnY9_M5PErhHWLREr5arBBBi",
+    "delta_thresh": 5,
+    "min_upload_seconds": 3,
+    "fps": 16,
+    "resolution": [
+        640,
+        480
+    ],
+    "camera_warmup_time": 2.5,
+    "min_face_frames": 6,
+    "token": "ewuwmKEEVLw:APA91bHrdN_UshoeML7xtBvV68-e7TJbF6O920IqyiayNLhVw-1QHh3YkhBqkv5PBAjTnAHkSupHbwZzavzYpbcMavx1ZEJnSQkA7Kl_walTOf9E3Pv4G1sq2N5d9FB2DwkxvYPwHVDO"
+}

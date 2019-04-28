@@ -365,6 +365,8 @@ class BaseCamera(object):
                         
                         if cls.conf["use_dropbox"]:
                             # write the image to temporary file
+                            if not client:
+                                client = dropbox.Dropbox(cls.conf["dropbox_access_token"])
                             t = TempImage()
                             cv2.imwrite(t.path, frame)
                             # upload the image to Dropbox and cleanup the tempory image
